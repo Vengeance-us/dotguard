@@ -24,10 +24,10 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/pychris1/dotguard"
-Repository = "https://github.com/pychris1/dotguard"
-"Bug Tracker" = "https://github.com/pychris1/dotguard/issues"
-Changelog = "https://github.com/pychris1/dotguard/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/Vengeance-us/dotguard"
+Repository = "https://github.com/Vengeance-us/dotguard"
+"Bug Tracker" = "https://github.com/Vengeance-us/dotguard/issues"
+Changelog = "https://github.com/Vengeance-us/dotguard/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = ["pytest>=7"]
