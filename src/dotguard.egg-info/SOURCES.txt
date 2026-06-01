@@ -1,0 +1,10 @@
+pyproject.toml
+src/dotguard/__init__.py
+src/dotguard/cli.py
+src/dotguard/init_cmd.py
+src/dotguard/validator.py
+src/dotguard.egg-info/PKG-INFO
+src/dotguard.egg-info/SOURCES.txt
+src/dotguard.egg-info/dependency_links.txt
+src/dotguard.egg-info/entry_points.txt
+src/dotguard.egg-info/top_level.txt
