@@ -1,0 +1,40 @@
+name: dotGuard
+
+on:
+  push:
+  pull_request:
+  workflow_call:
+    inputs:
+      fail_on:
+        required: false
+        default: "errors"
+        type: string
+      env_file:
+        required: false
+        default: ".env"
+        type: string
+      example_file:
+        required: false
+        default: ".env.example"
+        type: string
+
+jobs:
+  dotguard:
+    name: dotGuard .env check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dotGuard
+        run: pip install .
+
+      - name: Run dotGuard
+        run: |
+          dotguard \
+            --env "${{ inputs.env_file || '.env' }}" \
+            --example "${{ inputs.example_file || '.env.example' }}" \
+            --fail-on "${{ inputs.fail_on || 'errors' }}"

@@ -15,6 +15,7 @@ def build_parser():
     parser.add_argument("--env", default=".env", metavar="FILE")
     parser.add_argument("--example", default=".env.example", metavar="FILE")
     parser.add_argument("--strict", action="store_true")
+    parser.add_argument("--fail-on", dest="fail_on", default="errors", choices=["errors", "warnings", "all"], metavar="LEVEL")
     parser.add_argument("--no-extras", dest="no_extras", action="store_true")
     parser.add_argument("--quiet", action="store_true")
     parser.add_argument("--no-git-check", dest="no_git_check", action="store_true")
@@ -47,9 +48,12 @@ def run_check(args):
     warnings = len(result.warnings)
     parts = ([f"{errors} error{'s' if errors!=1 else ''}"] if errors else []) + ([f"{warnings} warning{'s' if warnings!=1 else ''}"] if warnings else [])
     print_line(f"{', '.join(parts)} found.", args.quiet)
-    if git_error or not result.passed: return 1
-    if args.strict and warnings: return 1
-    return 0
+    fail_on = args.fail_on
+    if args.strict and fail_on == "errors":
+        fail_on = "warnings"
+    if fail_on == "errors":
+        return 1 if errors else 0
+    return 1 if (errors or warnings) else 0
 
 def main(argv=None):
     args = build_parser().parse_args(argv)
