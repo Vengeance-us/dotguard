@@ -17,11 +17,17 @@ on:
         required: false
         default: ".env.example"
         type: string
+      pr_comment:
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   dotguard:
     name: dotGuard .env check
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
 
@@ -33,12 +39,67 @@ jobs:
         run: pip install .
 
       - name: Run dotGuard
+        id: check
+        continue-on-error: true
         run: |
+          set +e
           if [ ! -f ".env" ]; then
-            echo "dotguard: no .env file found, skipping."
-            exit 0
+            echo "dotguard: no .env file found, skipping." > /tmp/dotguard.txt
+            exit_code=0
+          else
+            dotguard \
+              --env "${{ inputs.env_file || '.env' }}" \
+              --example "${{ inputs.example_file || '.env.example' }}" \
+              --fail-on "${{ inputs.fail_on || 'errors' }}" > /tmp/dotguard.txt 2>&1
+            exit_code=$?
           fi
-          dotguard \
-            --env "${{ inputs.env_file || '.env' }}" \
-            --example "${{ inputs.example_file || '.env.example' }}" \
-            --fail-on "${{ inputs.fail_on || 'errors' }}"
+          cat /tmp/dotguard.txt
+          delimiter="DOTGUARD_$(openssl rand -hex 8)"
+          {
+            echo "output<<$delimiter"
+            cat /tmp/dotguard.txt
+            echo "$delimiter"
+            echo "exit_code=$exit_code"
+          } >> "$GITHUB_OUTPUT"
+          exit $exit_code
+
+      - name: Post PR comment
+        if: github.event_name == 'pull_request' && inputs.pr_comment
+        uses: actions/github-script@v7
+        env:
+          DOTGUARD_OUTPUT: ${{ steps.check.outputs.output }}
+          DOTGUARD_EXIT_CODE: ${{ steps.check.outputs.exit_code }}
+        with:
+          script: |
+            const marker = '<!-- dotguard -->';
+            const output = process.env.DOTGUARD_OUTPUT.trim();
+            const passed = process.env.DOTGUARD_EXIT_CODE === '0';
+            const body = passed
+              ? `${marker}\n🛡️ **dotGuard Report**\n\n✅ ${output}`
+              : `${marker}\n🛡️ **dotGuard Report**\n\n\`\`\`\n${output}\n\`\`\``;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c => c.body.startsWith(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+      - name: Fail if dotGuard found issues
+        if: steps.check.outputs.exit_code != '0'
+        run: exit 1
