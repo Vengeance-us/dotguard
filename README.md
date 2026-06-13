@@ -1,13 +1,10 @@
 <p align="center">
   <img src="logo.png" alt="dotguard logo" width="140" />
 </p>
-
 <h1 align="center">dotguard</h1>
-
 <p align="center">
   Validate your <code>.env</code> file against <code>.env.example</code> before you deploy.
 </p>
-
 <p align="center">
   <a href="https://pypi.org/project/dotguard/"><img alt="PyPI" src="https://img.shields.io/pypi/v/dotguard?color=000&labelColor=111&style=flat-square"></a>
   <a href="https://pypi.org/project/dotguard/"><img alt="Python" src="https://img.shields.io/pypi/pyversions/dotguard?color=000&labelColor=111&style=flat-square"></a>
@@ -53,6 +50,9 @@ pip install dotguard
 ```bash
 dotguard                   # Validate .env against .env.example
 dotguard --strict          # Treat warnings as errors (recommended for CI)
+dotguard --fail-on errors  # Exit 1 on errors only (default)
+dotguard --fail-on warnings # Exit 1 on warnings only
+dotguard --fail-on all     # Exit 1 on any issue
 dotguard --no-extras       # Treat undocumented keys as errors
 dotguard --no-git-check    # Skip git tracking check
 dotguard --quiet           # Silent — exit code only
@@ -76,16 +76,35 @@ dotguard init --force      # Overwrite an existing .env.example
 
 Drop dotguard into your pipeline to catch environment issues before they reach production.
 
-**GitHub Actions**
+### GitHub Actions (reusable workflow)
+
+The easiest way to integrate dotGuard is via the reusable workflow. Add this to your own repo's workflow file:
+
+```yaml
+jobs:
+  dotguard:
+    uses: Vengeance-us/dotguard/.github/workflows/dotguard.yml@main
+    with:
+      fail_on: "errors"       # "errors" | "warnings" | "all" (default: "errors")
+      env_file: ".env"        # path to your .env file (default: ".env")
+      example_file: ".env.example"  # path to your .env.example (default: ".env.example")
+      pr_comment: true        # post findings as a PR comment (default: false)
+```
+
+> If no `.env` file is found in the repository, dotGuard skips gracefully and the workflow passes.
+
+### GitHub Actions (inline)
+
+Prefer to inline it directly in your own workflow?
 
 ```yaml
 - name: Validate environment
   run: |
     pip install dotguard
-    dotguard --strict
+    dotguard --fail-on errors
 ```
 
-**Pre-commit hook**
+### Pre-commit hook
 
 ```bash
 # .git/hooks/pre-commit
